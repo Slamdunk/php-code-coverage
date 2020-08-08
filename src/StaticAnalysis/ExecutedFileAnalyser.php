@@ -132,6 +132,20 @@ final class ExecutedFileAnalyser
             return;
         }
 
+        $cacheFile = '/tmp/phpcc_' . sha1($filename);
+        if (is_file($cacheFile)) {
+            $data = file_get_contents($cacheFile);
+            $data = unserialize($data);
+
+            $this->classes[$filename] = $data['classes'];
+            $this->traits[$filename] = $data['traits'];
+            $this->functions[$filename] = $data['functions'];
+            $this->linesOfCode[$filename] = $data['linesOfCode'];
+            $this->ignoredLines[$filename] = $data['ignoredLines'];
+
+            return;
+        }
+
         $source      = file_get_contents($filename);
         $linesOfCode = substr_count($source, "\n");
 
@@ -187,6 +201,14 @@ final class ExecutedFileAnalyser
         $this->ignoredLines[$filename] = array_unique($this->ignoredLines[$filename]);
 
         sort($this->ignoredLines[$filename]);
+
+        file_put_contents($cacheFile, serialize([
+            'classes' => $this->classes[$filename],
+            'traits' => $this->traits[$filename],
+            'functions' => $this->functions[$filename],
+            'linesOfCode' => $this->linesOfCode[$filename],
+            'ignoredLines' => $this->ignoredLines[$filename],
+        ]));
     }
 
     private function findLinesIgnoredByLineBasedAnnotations(string $filename, string $source, bool $useAnnotationsForIgnoringCode): void
